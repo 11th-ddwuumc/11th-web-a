@@ -1,0 +1,60 @@
+.movie-card {
+  width: 148px;
+}
+
+.poster-wrapper {
+  position: relative;
+  width: 148px;
+  height: 208px;
+}
+
+.poster {
+  width: 148px;
+  height: 208px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.bookmark-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+
+  width: 28px;
+  height: 28px;
+
+  border: none;
+  border-radius: 8px;
+  background: rgba(17, 24, 39, 0.7);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.bookmark-button img {
+  width: 16px;
+  height: 16px;
+}
+
+/* 북마크 선택 상태 */
+.bookmark-button.bookmarked {
+  background: #5b5ce9;
+}
+
+.movie-card h3 {
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 18px;
+  color: #111827;
+}
+
+.movie-card p {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #9ca3af;
+}

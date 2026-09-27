@@ -1,0 +1,13 @@
+:root {
+  --color-text-secondary: #606774;
+  --color-text-primary: #17191e;
+  --color-bg-page: #F6F7F9;
+  --color-bg-surface: #FFFFFF;
+  --color-border-default:#E3E6EB;
+  --color-action-primary: #2563EB;
+  --color-text-tertiary: #969DA8;
+  --color-danger-default: #D92D20;
+  --color-action-hover:#1D4ED8;
+  --color-action-pressed: #1748AD;
+  --color-action-disabled: #D9E5FF;
+}

@@ -1,0 +1,71 @@
+
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #f5f5f7;
+  font-family: Pretendard, sans-serif;
+  color: #111827;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+  width: 100%;
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 20px 0 0;   
+  box-sizing: border-box;
+}
+
+main h2 {
+  margin-bottom: 20px;
+}
+
+.footer {
+  width: 100%;
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+  padding: 8px 48px;
+  margin-top: auto;
+  box-sizing: border-box;
+}
+
+.footer p {
+  margin: 0;
+  line-height: 1.2;
+}
+
+.footer-content {
+  max-width: 1280px;
+  margin: 0 auto;
+
+  display: flex;
+  justify-content: flex-end; /* 오른쪽 정렬 */
+  align-items: center;
+  gap: 8px;
+}
+
+.tmdb-logo {
+  width: 28px;
+  height: auto;
+}
+
+.footer-text {
+  margin: 0;
+  font-size: 11px;
+  color: #8b8b8b;
+}

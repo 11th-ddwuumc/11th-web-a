@@ -7,6 +7,11 @@ export function MovieListPage() {
   const [movieList, setMovieList] = useState(movies);
   const [currentPage, setCurrentPage] = useState(1);
 
+  const moviesPerPage = 4;
+  const totalPages = Math.ceil(movieList.length / moviesPerPage);
+  const startIndex = (currentPage - 1) * moviesPerPage;
+  const currentMovies = movieList.slice(startIndex, startIndex + moviesPerPage);
+
   function handleToggleBookmark(id: number) {
     setMovieList((previousMovies) =>
       previousMovies.map((movie) =>
@@ -18,16 +23,17 @@ export function MovieListPage() {
   }
 
   return (
-    <main className="mx-auto min-h-[calc(100vh-88px)] max-w-[1360px] px-5 pt-6 pb-16 sm:px-10">
+    <main className="mx-auto w-full max-w-[1360px] flex-1 px-5 pt-6 pb-14 sm:px-10">
       <h1 className="mb-5 text-[28px] font-bold tracking-tight sm:text-[34px]">영화 목록</h1>
 
       <MovieGrid
-        movies={movieList}
+        movies={currentMovies}
         onToggleBookmark={handleToggleBookmark}
       />
 
       <Pagination
         currentPage={currentPage}
+        totalPages={totalPages}
         onPageChange={setCurrentPage}
       />
     </main>

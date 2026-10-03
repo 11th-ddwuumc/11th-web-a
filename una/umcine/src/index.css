@@ -1,26 +1,19 @@
-* {
-  box-sizing: border-box;
-}
+﻿@import "tailwindcss";
 
-body {
-  margin: 0;
-  font-family: Arial, "맑은 고딕", sans-serif;
-  color: #191b1f;
-  background: #f5f6f8;
-}
+@layer base {
+  body {
+    margin: 0;
+    font-family: Arial, "맑은 고딕", sans-serif;
+    color: #191b1f;
+    background: #f5f6f8;
+  }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
+  button:not(:disabled) {
+    cursor: pointer;
+  }
 
-button {
-  font: inherit;
-  cursor: pointer;
-}
-
-button:focus-visible,
-a:focus-visible {
-  outline: 3px solid #2563eb;
-  outline-offset: 4px;
+  :where(button, a, input):focus-visible {
+    outline: 3px solid #2563eb;
+    outline-offset: 4px;
+  }
 }

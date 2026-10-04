@@ -6,13 +6,13 @@ import { movies } from "../../data/movies";
 export function MovieDetailPage() {
   const { movieId } = useParams({ from: "/movies/$movieId" });
 
-  // 주소의 번호와 같은 영화 찾기
+
   const movie = movies.find((item) => item.id === Number(movieId));
 
-  // 즐겨찾기 상태 (처음 값은 영화 데이터를 따라가요)
+
   const [isBookmarked, setIsBookmarked] = useState(false);
 
-  // 영화가 바뀌면 즐겨찾기 상태도 다시 맞춰요
+
   useEffect(() => {
     if (movie) {
       setIsBookmarked(movie.isBookmarked);
@@ -21,7 +21,7 @@ export function MovieDetailPage() {
     }
   }, [movie]);
 
-  // 없는 영화 번호일 때
+
   if (!movie) {
     return (
       <div className="flex flex-1 items-center justify-center bg-[#f5f5f7]">
@@ -32,13 +32,13 @@ export function MovieDetailPage() {
     );
   }
 
-  // 상태에 따라 바뀌는 아이콘
+
   let bookmarkIcon = "/icons/movie-icons/bookmark-outline.svg";
   if (isBookmarked) {
     bookmarkIcon = "/icons/movie-icons/bookmark.svg";
   }
 
-  // 즐겨찾기 버튼을 눌렀을 때
+
   function handleToggleBookmark() {
     setIsBookmarked(!isBookmarked);
   }

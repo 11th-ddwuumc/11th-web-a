@@ -1,10 +1,10 @@
-import Header from "./pages/header";
-import MovieGrid from "./pages/movie-grid";
+import { Header } from "./components/layout/header";
+import MovieGrid from "./components/movies/movie-grid";
 export default function App() {
   return (
     <main>
- <Header/>
-    <MovieGrid/>
+     <Header/>
+      <MovieGrid/>
 
     </main>
      );

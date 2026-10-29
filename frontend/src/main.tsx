@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 import "./index.css";
+import { getPopularMovies } from './api/movies';
 
 const router = createRouter({ routeTree });
 
@@ -20,3 +21,13 @@ createRoot(document.getElementById("root")!).render(
     <RouterProvider router={router} />
   </StrictMode>,
 );
+
+
+
+getPopularMovies()
+  .then((data) => {
+    console.log('TMDB 인기 영화 API 성공:', data);
+  })
+  .catch((error) => {
+    console.error('TMDB 인기 영화 API 실패:', error);
+  });

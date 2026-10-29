@@ -1,0 +1,12 @@
+package com.umc.week03.dto;
+
+import jakarta.validation.constraints.NotNull;
+
+public record CreateRentalRequest(
+        @NotNull(message = "사용자 ID는 필수입니다.")
+        Long userId,
+
+        @NotNull(message = "도서 ID는 필수입니다.")
+        Long bookId
+) {
+}

@@ -1,0 +1,19 @@
+﻿@import "tailwindcss";
+
+@layer base {
+  body {
+    margin: 0;
+    font-family: Arial, "맑은 고딕", sans-serif;
+    color: #191b1f;
+    background: #f5f6f8;
+  }
+
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+
+  :where(button, a, input):focus-visible {
+    outline: 3px solid #2563eb;
+    outline-offset: 4px;
+  }
+}

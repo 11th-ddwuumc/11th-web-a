@@ -11,6 +11,8 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
+.env.*
 
 # Local submission notes
 /[Ww][Ee][Ee][Kk]03.md

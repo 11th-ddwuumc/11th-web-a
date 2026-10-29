@@ -1,7 +1,11 @@
-import { movies } from "../../data/movies";
+import type { MovieCardItem } from "../../types/movie";
 import MovieCard from "./movie-card";
 
-export default function MovieGrid() {
+interface MovieGridProps {
+  movies: MovieCardItem[];
+}
+
+export default function MovieGrid({ movies }: MovieGridProps) {
   return (
     <section className="flex w-full flex-col items-start gap-5 bg-[var(--color-bg-page)] px-4 py-6 sm:px-8 lg:px-20">
       <h1 className="m-0 text-[32px] font-bold leading-tight tracking-[-1.5px] text-[var(--color-text-primary)] sm:text-[38px] sm:leading-[44px] sm:tracking-[-1.71px]">

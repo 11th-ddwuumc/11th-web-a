@@ -1,9 +1,9 @@
-import type { Movie } from "../../types/movie";
+import type { MovieCardItem } from "../../types/movie";
 import { Link } from "@tanstack/react-router";
 import { BookmarkButton } from "../bookmark-button";
 
 interface MovieCardProps {
-  movie: Movie;
+  movie: MovieCardItem;
 }
 
 export default function MovieCard({ movie }: MovieCardProps) {

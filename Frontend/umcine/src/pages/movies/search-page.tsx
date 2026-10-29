@@ -1,20 +1,68 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import type { FormEvent } from "react";
-import { movies } from "../../data/movies";
+import { useEffect, useState, type FormEvent } from "react";
+import { searchMovies } from "../../api/movies/search-movies";
+import type { TmdbMovieListItem } from "../../api/movies/models";
 import MovieCard from "../../components/movies/movie-card";
+import type { MovieCardItem } from "../../types/movie";
+
+const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
 export function SearchPage() {
   const { query } = useSearch({ from: "/search" });
   const navigate = useNavigate({ from: "/search" });
+  const [movies, setMovies] = useState<TmdbMovieListItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const normalizedQuery = query?.trim().toLowerCase() ?? "";
-  const searchResults = normalizedQuery
-    ? movies.filter(
-        (movie) =>
-          movie.title.toLowerCase().includes(normalizedQuery) ||
-          movie.originalTitle.toLowerCase().includes(normalizedQuery),
-      )
-    : [];
+  const normalizedQuery = query?.trim() ?? "";
+
+  useEffect(() => {
+    let ignore = false;
+
+    function loadSearchResults() {
+      setMovies([]);
+      setErrorMessage(null);
+
+      if (!normalizedQuery) {
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+
+      searchMovies({ query: normalizedQuery })
+        .then((response) => {
+          if (!ignore) {
+            setMovies(response.results);
+          }
+        })
+        .catch(() => {
+          if (!ignore) {
+            setErrorMessage("검색 결과를 불러오지 못했어요.");
+          }
+        })
+        .finally(() => {
+          if (!ignore) {
+            setIsLoading(false);
+          }
+        });
+    }
+
+    loadSearchResults();
+
+    return () => {
+      ignore = true;
+    };
+  }, [normalizedQuery]);
+
+  const cardMovies: MovieCardItem[] = movies.map((movie) => ({
+    id: movie.id,
+    title: movie.title,
+    releaseDate: movie.release_date || "개봉일 미정",
+    posterPath: movie.poster_path
+      ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}`
+      : "/icons/movie-icons/movie.svg",
+  }));
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -69,17 +117,25 @@ export function SearchPage() {
             <div className="flex items-center justify-between border-b border-[var(--color-border-default)] pb-4">
               <h2 className="text-lg font-bold">‘{query}’ 검색 결과</h2>
               <p className="text-sm text-[var(--color-text-secondary)]">
-                영화 {searchResults.length}편
+                영화 {cardMovies.length}편
               </p>
             </div>
 
-            {searchResults.length === 0 ? (
+            {isLoading ? (
+              <p className="py-16 text-center text-[var(--color-text-secondary)]">
+                검색 결과를 불러오는 중이에요.
+              </p>
+            ) : errorMessage ? (
+              <p className="py-16 text-center text-[var(--color-danger-default)]">
+                {errorMessage}
+              </p>
+            ) : cardMovies.length === 0 ? (
               <p className="py-16 text-center text-[var(--color-text-secondary)]">
                 검색 결과가 없어요.
               </p>
             ) : (
               <ul className="mt-5 grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 xl:gap-5">
-                {searchResults.map((movie) => (
+                {cardMovies.map((movie) => (
                   <li key={movie.id}>
                     <MovieCard movie={movie} />
                   </li>

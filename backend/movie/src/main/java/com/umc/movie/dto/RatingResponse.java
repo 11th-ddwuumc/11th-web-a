@@ -1,4 +1,3 @@
-
 package com.umc.movie.dto;
 
 import com.umc.movie.entity.Rating;

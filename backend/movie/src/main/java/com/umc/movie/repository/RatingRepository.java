@@ -8,4 +8,6 @@ import java.util.List;
 public interface RatingRepository extends JpaRepository<Rating, Long> {
 
     List<Rating> findByMemberMemberIdOrderByCreatedAtDesc(Long memberId);
+
+    boolean existsByMemberMemberIdAndMovieId(Long memberId, Long movieId);
 }

@@ -21,7 +21,7 @@ export function SearchPage() {
 
   const searchResults = searchQuery.data?.results ?? [];
  
-  const cardMovies: MovieCardItem[] = movies.map((movie) => ({
+  const cardMovies: MovieCardItem[] = searchResults.map((movie) => ({
     id: movie.id,
     title: movie.title,
     releaseDate: movie.release_date || "개봉일 미정",
@@ -89,13 +89,13 @@ export function SearchPage() {
               </p>
             </div>
 
-            ) :searchQuery.isLoading ? (
-              <p className="py-16 text-center text-[var(--color-text-secondary)]">
+                {searchQuery.isPending ? (
+                <p className="py-16 text-center text-[var(--color-text-secondary)]">
                 검색 결과를 불러오는 중이에요.
               </p>
             ) : searchQuery.isError ? (
               <p className="py-16 text-center text-[var(--color-danger-default)]">
-                <p> {searchQuery.error.message} </p>
+                 {searchQuery.error.message} 
               </p>
             ) : searchQuery.isSuccess && searchResults.length === 0 ? (
               <p className="py-16 text-center text-[var(--color-text-secondary)]">

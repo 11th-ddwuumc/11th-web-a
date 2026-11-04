@@ -1,7 +1,6 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
 import { getMovieDetail } from "../../api/movies/get-movie-detail";
-import type { TmdbMovieDetail } from "../../api/movies/models";
 import { BookmarkButton } from "../../components/bookmark-button";
 import { getMovieDetailErrorMessage } from "../../utils/movies/get-movie-detail-error-message";
 
@@ -24,51 +23,16 @@ function formatRuntime(runtime: number | null) {
 }
 
 export function MovieDetailPage() {
-  const { movieId } = useParams({ from: "/movies/$movieId" });
-  const parsedMovieId = Number(movieId);
+  const { movieId: movieIdParam } = useParams({ from: "/movies/$movieId" });
+  const movieId = Number(movieIdParam);
   const isValidMovieId =
-    Number.isInteger(parsedMovieId) && parsedMovieId > 0;
-  const [movie, setMovie] = useState<TmdbMovieDetail | null>(null);
-  const [isLoading, setIsLoading] = useState(isValidMovieId);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    Number.isInteger(movieId) && movieId > 0;
 
-  useEffect(() => {
-    let ignore = false;
-
-    async function loadMovieDetail() {
-      setMovie(null);
-      setErrorMessage(null);
-
-      if (!isValidMovieId) {
-        setIsLoading(false);
-        return;
-      }
-
-      setIsLoading(true);
-
-      try {
-        const response = await getMovieDetail(parsedMovieId);
-
-        if (!ignore) {
-          setMovie(response);
-        }
-      } catch (error) {
-        if (!ignore) {
-          setErrorMessage(getMovieDetailErrorMessage(error));
-        }
-      } finally {
-        if (!ignore) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    loadMovieDetail();
-
-    return () => {
-      ignore = true;
-    };
-  }, [isValidMovieId, parsedMovieId]);
+  const movieDetailQuery = useQuery({
+    queryKey: ["movies", "detail", movieId],
+    queryFn: () => getMovieDetail(movieId),
+    enabled: isValidMovieId,
+  });
 
   if (!isValidMovieId) {
     return (
@@ -86,7 +50,7 @@ export function MovieDetailPage() {
     );
   }
 
-  if (isLoading) {
+  if (movieDetailQuery.isPending) {
     return (
       <main className="grid min-h-[70vh] place-items-center px-4 text-center text-[var(--color-text-secondary)]">
         영화 정보를 불러오는 중이에요.
@@ -94,12 +58,12 @@ export function MovieDetailPage() {
     );
   }
 
-  if (errorMessage || !movie) {
+  if (movieDetailQuery.isError) {
     return (
       <main className="grid min-h-[70vh] place-items-center px-4 text-center">
         <div>
           <h1 className="text-3xl font-bold">
-            {errorMessage ?? "영화 정보를 불러오지 못했어요."}
+            {getMovieDetailErrorMessage(movieDetailQuery.error)}
           </h1>
           <Link
             to="/"
@@ -111,6 +75,8 @@ export function MovieDetailPage() {
       </main>
     );
   }
+
+  const movie = movieDetailQuery.data;
 
   const posterUrl = movie.poster_path
     ? `${TMDB_POSTER_BASE_URL}${movie.poster_path}`

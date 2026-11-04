@@ -1,7 +1,7 @@
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { useEffect, useState, type FormEvent } from "react";
+import type { FormEvent } from "react";
 import { searchMovies } from "../../api/movies/search-movies";
-import type { TmdbMovieListItem } from "../../api/movies/models";
 import MovieCard from "../../components/movies/movie-card";
 import type { MovieCardItem } from "../../types/movie";
 
@@ -9,52 +9,18 @@ const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
 export function SearchPage() {
   const { query } = useSearch({ from: "/search" });
-  const navigate = useNavigate({ from: "/search" });
-  const [movies, setMovies] = useState<TmdbMovieListItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const navigate = useNavigate({from: "/search" });
 
   const normalizedQuery = query?.trim() ?? "";
 
-  useEffect(() => {
-    let ignore = false;
+  const searchQuery = useQuery({
+    queryKey: ["movies", "search", {query: normalizedQuery}],
+    queryFn: () => searchMovies({query: normalizedQuery}),
+    enabled: normalizedQuery.length>0,
+  });
 
-    function loadSearchResults() {
-      setMovies([]);
-      setErrorMessage(null);
-
-      if (!normalizedQuery) {
-        setIsLoading(false);
-        return;
-      }
-
-      setIsLoading(true);
-
-      searchMovies({ query: normalizedQuery })
-        .then((response) => {
-          if (!ignore) {
-            setMovies(response.results);
-          }
-        })
-        .catch(() => {
-          if (!ignore) {
-            setErrorMessage("검색 결과를 불러오지 못했어요.");
-          }
-        })
-        .finally(() => {
-          if (!ignore) {
-            setIsLoading(false);
-          }
-        });
-    }
-
-    loadSearchResults();
-
-    return () => {
-      ignore = true;
-    };
-  }, [normalizedQuery]);
-
+  const searchResults = searchQuery.data?.results ?? [];
+ 
   const cardMovies: MovieCardItem[] = movies.map((movie) => ({
     id: movie.id,
     title: movie.title,
@@ -66,8 +32,10 @@ export function SearchPage() {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
     const formData = new FormData(event.currentTarget);
     const nextQuery = String(formData.get("query") ?? "").trim();
+   
     navigate({
       search: nextQuery ? { query: nextQuery } : {},
     });
@@ -121,15 +89,15 @@ export function SearchPage() {
               </p>
             </div>
 
-            {isLoading ? (
+            ) :searchQuery.isLoading ? (
               <p className="py-16 text-center text-[var(--color-text-secondary)]">
                 검색 결과를 불러오는 중이에요.
               </p>
-            ) : errorMessage ? (
+            ) : searchQuery.isError ? (
               <p className="py-16 text-center text-[var(--color-danger-default)]">
-                {errorMessage}
+                <p> {searchQuery.error.message} </p>
               </p>
-            ) : cardMovies.length === 0 ? (
+            ) : searchQuery.isSuccess && searchResults.length === 0 ? (
               <p className="py-16 text-center text-[var(--color-text-secondary)]">
                 검색 결과가 없어요.
               </p>

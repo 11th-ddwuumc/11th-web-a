@@ -1,14 +1,21 @@
+
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import {
-  createRouter,
-  RouterProvider,
-} from "@tanstack/react-router";
+import { createRouter, RouterProvider } from "@tanstack/react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { routeTree } from "./routeTree.gen";
 import "./index.css";
-import { getPopularMovies } from './api/movies';
 
 const router = createRouter({ routeTree });
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60 * 1000,
+    },
+  },
+});
 
 declare module "@tanstack/react-router" {
   interface Register {
@@ -18,16 +25,9 @@ declare module "@tanstack/react-router" {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   </StrictMode>,
 );
-
-
-
-getPopularMovies()
-  .then((data) => {
-    console.log('TMDB 인기 영화 API 성공:', data);
-  })
-  .catch((error) => {
-    console.error('TMDB 인기 영화 API 실패:', error);
-  });

@@ -1,19 +1,31 @@
 ﻿import { Link, useParams } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { movies } from "../../data/movies";
+import { useQuery } from "@tanstack/react-query";
+import { getMovieDetail } from "../../api/movies";
 import type { Movie } from "../../types/movie";
 import { cn } from "../../utils/cn";
 import { useBookmarkStore } from "../../stores/bookmark-store";
 
 export function MovieDetailPage() {
-  const { movieId } = useParams({ from: "/movies/$movieId" });
-  const movie = movies.find((item) => String(item.id) === movieId);
+  const { movieId: movieIdParam } = useParams({
+    from: "/movies/$movieId",
+  });
 
-  if (!movie) {
+  const movieId = Number(movieIdParam);
+  const isValidMovieId = Number.isInteger(movieId) && movieId > 0;
+
+  const movieDetailQuery = useQuery({
+    queryKey: ["movies", "detail", movieId],
+    queryFn: () => getMovieDetail(movieId),
+    enabled: isValidMovieId,
+    staleTime: 30 * 1000,
+  });
+
+  if (!isValidMovieId) {
     return (
       <main className="mx-auto w-full max-w-[1360px] px-5 py-16 sm:px-10">
         <h1 className="mb-6 text-2xl font-bold">
-          영화를 찾을 수 없어요.
+          올바르지 않은 영화 번호예요.
         </h1>
 
         <Link
@@ -26,7 +38,51 @@ export function MovieDetailPage() {
     );
   }
 
-  return <MovieDetail key={movie.id} movie={movie} />;
+  if (movieDetailQuery.isPending) {
+    return (
+      <main
+        role="status"
+        className="mx-auto w-full max-w-[1360px] px-5 py-16 sm:px-10"
+      >
+        영화 상세 정보를 불러오는 중이에요.
+      </main>
+    );
+  }
+
+  if (movieDetailQuery.isError) {
+    return (
+      <main
+        role="alert"
+        className="mx-auto w-full max-w-[1360px] px-5 py-16 sm:px-10"
+      >
+        <h1 className="mb-4 text-2xl font-bold">
+          영화 상세 정보를 불러오지 못했습니다.
+        </h1>
+
+        <button
+          type="button"
+          onClick={() => void movieDetailQuery.refetch()}
+          className="rounded-md bg-blue-600 px-4 py-2 text-white"
+        >
+          다시 시도
+        </button>
+
+        <Link
+          className="ml-4 text-blue-600 underline underline-offset-4"
+          to="/"
+        >
+          영화 목록으로 돌아가기
+        </Link>
+      </main>
+    );
+  }
+
+  return (
+    <MovieDetail
+      key={movieDetailQuery.data.id}
+      movie={movieDetailQuery.data}
+    />
+  );
 }
 
 function MovieDetail({ movie }: { movie: Movie }) {
@@ -53,11 +109,13 @@ function MovieDetail({ movie }: { movie: Movie }) {
         className="relative h-[340px] bg-gray-900 text-white lg:h-[360px]"
         aria-label="영화 정보"
       >
-        <img
-          className="absolute inset-0 h-full w-full object-cover"
-          src={movie.backdropPath}
-          alt=""
-        />
+        {movie.backdropPath && (
+          <img
+            className="absolute inset-0 h-full w-full object-cover"
+            src={movie.backdropPath}
+            alt=""
+          />
+        )}
 
         <div
           className="absolute inset-0 bg-linear-to-r from-black/65 via-black/20 to-transparent"
@@ -103,11 +161,11 @@ function MovieDetail({ movie }: { movie: Movie }) {
 
         <section aria-label="영화 소개">
           <h2 className="text-xl font-bold">
-            {movie.tagline}
+            {movie.tagline || movie.title}
           </h2>
 
           <p className="mt-3 text-sm leading-7 text-gray-500">
-            {movie.overview}
+            {movie.overview || "영화 소개 정보가 없습니다."}
           </p>
 
           <button

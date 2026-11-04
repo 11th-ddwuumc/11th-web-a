@@ -1,13 +1,7 @@
-﻿
-import { Link, useNavigate, useSearch } from "@tanstack/react-router";
-import {
-  useEffect,
-  useRef,
-  useState,
-  type FormEvent,
-} from "react";
+﻿import { Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { useRef, useState, type FormEvent } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { searchMovies } from "../../api/movies";
-import type { Movie } from "../../types/movie";
 import { cn } from "../../utils/cn";
 import { useBookmarkStore } from "../../stores/bookmark-store";
 
@@ -22,12 +16,6 @@ function SearchContent({ query }: { query?: string }) {
   const [searchText, setSearchText] = useState(query ?? "");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const [results, setResults] = useState<Movie[]>([]);
-  const [totalResults, setTotalResults] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
-
   const bookmarkedMovieIds = useBookmarkStore(
     (state) => state.bookmarkedMovieIds,
   );
@@ -38,43 +26,18 @@ function SearchContent({ query }: { query?: string }) {
 
   const normalizedQuery = query?.trim() ?? "";
 
-  useEffect(() => {
-    if (!normalizedQuery) return;
+  const searchQuery = useQuery({
+    queryKey: ["movies", "search", { query: normalizedQuery }],
+    queryFn: () => searchMovies(normalizedQuery, 1),
+    enabled: normalizedQuery.length > 0,
+  });
 
-    const controller = new AbortController();
-
-    async function fetchResults() {
-      setIsLoading(true);
-      setError(null);
-      setResults([]);
-
-      try {
-        const data = await searchMovies(
-          normalizedQuery,
-          1,
-          controller.signal,
-        );
-
-        if (controller.signal.aborted) return;
-
-        setResults(data.results);
-        setTotalResults(data.total_results);
-      } catch (err) {
-        if (controller.signal.aborted) return;
-
-        console.error("영화 검색 실패:", err);
-        setError("검색 결과를 불러오지 못했습니다.");
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    fetchResults();
-
-    return () => controller.abort();
-  }, [normalizedQuery, retryCount]);
+  const results = searchQuery.data?.results ?? [];
+  const totalResults = searchQuery.data?.total_results ?? 0;
+  const isLoading = searchQuery.isLoading;
+  const error = searchQuery.isError
+    ? "검색 결과를 불러오지 못했습니다."
+    : null;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -83,7 +46,7 @@ function SearchContent({ query }: { query?: string }) {
     setSearchText(nextQuery);
 
     if (nextQuery === normalizedQuery && nextQuery) {
-      setRetryCount((count) => count + 1);
+      void searchQuery.refetch();
       return;
     }
 
@@ -185,7 +148,7 @@ function SearchContent({ query }: { query?: string }) {
               <button
                 type="button"
                 className="rounded-md bg-blue-600 px-4 py-2 text-white"
-                onClick={() => setRetryCount((count) => count + 1)}
+                onClick={() => void searchQuery.refetch()}
               >
                 다시 시도
               </button>

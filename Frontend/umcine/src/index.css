@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+@theme {
+  --font-pretendard: "Pretendard", sans-serif;
+  --color-text-secondary: #606774;
+  --color-text-primary: #17191e;
+  --color-bg-page: #f6f7f9;
+  --color-bg-surface: #ffffff;
+  --color-border-default: #e3e6eb;
+  --color-action-primary: #2563eb;
+  --color-text-tertiary: #969DA8;
+  --color-danger-default: #d92d20;
+  --color-action-hover: #1d4ed8;
+  --color-action-pressed: #1748ad;
+  --color-action-disabled: #d9e5ff;
+}
+
+@layer base {
+  html {
+    background: var(--color-bg-page);
+  }
+
+  body {
+    min-width: 320px;
+    background: var(--color-bg-page);
+    color: var(--color-text-primary);
+    font-family: var(--font-pretendard);
+  }
+
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+}

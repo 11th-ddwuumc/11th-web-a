@@ -1,5 +1,4 @@
-
-const BASE_URL = "http://localhost:8080";
+const BASE_URL = "http://192.168.0.14:8080";
 
 export type AvailabilityResponse = {
     available: boolean;
@@ -12,6 +11,23 @@ export type RatingResponse = {
     comment: string | null;
     createdAt: string;
     updatedAt: string;
+};
+
+export type SignupRequest = {
+    email: string;
+    nickname: string;
+    password: string;
+};
+
+export type SignupResponse = {
+    isSuccess: boolean;
+    code: string;
+    message: string;
+    result: {
+        memberId: number;
+        email: string;
+        nickname: string;
+    };
 };
 
 async function getJson<T>(path: string): Promise<T> {
@@ -40,4 +56,20 @@ export function getMemberRatings(memberId: number) {
     return getJson<RatingResponse[]>(
         `/members/${memberId}/ratings`
     );
+}
+
+export async function createMember(data: SignupRequest): Promise<SignupResponse> {
+    const response = await fetch(`${BASE_URL}/members`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        throw new Error(`회원가입 요청 실패: ${response.status}`);
+    }
+
+    return response.json() as Promise<SignupResponse>;
 }

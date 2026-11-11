@@ -8,6 +8,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
+import com.umc.movie.exception.ApiException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -32,5 +33,14 @@ public class GlobalExceptionHandler {
         int status = exception.getStatusCode().value();
         return ResponseEntity.status(status)
                 .body(ApiResponse.failure("COMMON" + status, exception.getReason()));
+    }
+    // src/main/java/com/umc/movie/controller/GlobalExceptionHandler.java 에 아래 메서드를 추가합니다
+    // 6주차에 만든 네 개의 핸들러는 그대로 두고 아래 하나만 덧붙이면 됩니다
+
+    // 우리가 직접 던진 예외입니다. 예외가 들고 온 상태 코드와 코드 문자열을 그대로 씁니다.
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<ApiResponse<Void>> handleApiException(ApiException exception) {
+        return ResponseEntity.status(exception.getStatus())
+                .body(ApiResponse.failure(exception.getCode(), exception.getMessage()));
     }
 }

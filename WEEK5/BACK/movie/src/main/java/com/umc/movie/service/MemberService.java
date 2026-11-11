@@ -10,6 +10,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.umc.movie.dto.MemberInfoResponse;
+import com.umc.movie.exception.ApiException;
+import org.springframework.http.HttpStatus;
+import com.umc.movie.dto.MemberUpdateRequest;
+import com.umc.movie.dto.MemberInfoResponse;
+import com.umc.movie.exception.ApiException;
+import org.springframework.http.HttpStatus;
 
 @Service
 @RequiredArgsConstructor
@@ -54,4 +61,53 @@ public class MemberService {
                 savedMember.getNickname()
         );
     }
+
+    public MemberInfoResponse getMyInfo(Long memberId) {
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new ApiException(
+                        HttpStatus.NOT_FOUND,
+                        "MEMBER404_1",
+                        "해당 회원을 찾을 수 없습니다."
+                ));
+
+        return MemberInfoResponse.from(member);
+    }
+
+
+    public MemberInfoResponse updateMyInfo(
+            Long memberId,
+            MemberUpdateRequest request
+    ) {
+        // 1. 로그인한 회원 조회
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new ApiException(
+                        HttpStatus.NOT_FOUND,
+                        "MEMBER404_1",
+                        "해당 회원을 찾을 수 없습니다."
+                ));
+
+        // 2. 다른 회원의 닉네임과 중복되는지 검사
+        if (memberRepository.existsByNicknameAndMemberIdNot(
+                request.nickname(),
+                memberId
+        )) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "MEMBER409_1",
+                    "이미 사용 중인 닉네임입니다."
+            );
+        }
+
+        // 3. 닉네임 변경
+        member.updateNickname(request.nickname());
+
+        // 4. DB 저장
+        memberRepository.save(member);
+
+        // 5. 응답 DTO 반환
+        return MemberInfoResponse.from(member);
+    }
+
+
 }

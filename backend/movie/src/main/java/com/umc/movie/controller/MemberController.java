@@ -1,0 +1,89 @@
+package com.umc.movie.controller;
+
+import com.umc.movie.dto.*;
+import com.umc.movie.service.MemberService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/members")
+@RequiredArgsConstructor
+public class MemberController {
+
+    private final MemberService memberService;
+
+    @PostMapping
+    public ResponseEntity<ApiResponse<MemberResponse>> signUp(
+            @Valid @RequestBody SignUpRequest request
+    ) {
+        MemberResponse response = memberService.signUp(request);
+
+        return ResponseEntity.status(201)
+                .body(ApiResponse.created(
+                        "회원가입에 성공했습니다.", response
+                ));
+    }
+
+    @GetMapping("/nickname/{nickname}")
+    public AvailabilityResponse checkNickname(
+            @PathVariable String nickname
+    ) {
+        return memberService.checkNickname(nickname);
+    }
+
+    @GetMapping("/email/{email}")
+    public AvailabilityResponse checkEmail(
+            @PathVariable String email
+    ) {
+        return memberService.checkEmail(email);
+    }
+
+    @GetMapping("/{memberId}/ratings")
+    public List<RatingResponse> getMemberRatings(
+            @PathVariable Long memberId
+    ) {
+        return memberService.getMemberRatings(memberId);
+    }
+
+    @PostMapping("/{memberId}/ratings")
+    public ResponseEntity<ApiResponse<RatingResponse>> createRating(
+            @PathVariable Long memberId,
+            @Valid @RequestBody RatingCreateRequest request
+    ) {
+        RatingResponse response =
+                memberService.createRating(memberId, request);
+
+        return ResponseEntity.status(201)
+                .body(ApiResponse.created(
+                        "평점 등록에 성공했습니다.", response
+                ));
+    }
+
+    @PatchMapping("/{memberId}/ratings/{ratingId}")
+    public ResponseEntity<ApiResponse<RatingResponse>> updateRating(
+            @PathVariable Long memberId,
+            @PathVariable Long ratingId,
+            @Valid @RequestBody RatingUpdateRequest request
+    ) {
+        RatingResponse response =
+                memberService.updateRating(memberId, ratingId, request);
+
+        return ResponseEntity.ok(
+                ApiResponse.ok("평점 수정에 성공했습니다.", response)
+        );
+    }
+
+    @DeleteMapping("/{memberId}/ratings/{ratingId}")
+    public ResponseEntity<Void> deleteRating(
+            @PathVariable Long memberId,
+            @PathVariable Long ratingId
+    ) {
+        memberService.deleteRating(memberId, ratingId);
+
+        return ResponseEntity.noContent().build();
+    }
+}

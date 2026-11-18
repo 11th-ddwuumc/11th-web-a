@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/umc_movie
+    username: root
+    password: "1123"
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+jwt:
+  secret: K7b9Nx2WpQ4mRt9vL2zX8wP5qJ3nMb1v
+  access-expiration: 3600

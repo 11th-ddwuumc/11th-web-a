@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/ratings")
@@ -40,5 +41,12 @@ public class RatingController {
             @PathVariable Long ratingId) {
         ratingService.delete(memberId, ratingId);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/me")
+    public List<RatingResponse> getMyRatings(
+            @RequestAttribute(AuthInterceptor.MEMBER_ID)
+            Long memberId) {
+        return ratingService.getMyRatings(memberId);
     }
 }

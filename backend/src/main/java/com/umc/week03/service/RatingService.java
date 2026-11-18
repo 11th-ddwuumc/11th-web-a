@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -60,6 +61,15 @@ public class RatingService {
         Rating rating = findRating(ratingId);
         checkOwner(rating, memberId);
         ratingRepository.delete(rating);
+    }
+
+    @Transactional(readOnly = true)
+    public List<RatingResponse> getMyRatings(Long memberId) {
+        return ratingRepository
+                .findByMember_MemberIdOrderByRatingIdDesc(memberId)
+                .stream()
+                .map(RatingResponse::from)
+                .toList();
     }
 
     private Rating findRating(Long ratingId) {

@@ -3,7 +3,8 @@ package com.umc.week03.config;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.*;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 @RequiredArgsConstructor
@@ -17,7 +18,11 @@ public class WebConfig implements WebMvcConfigurer {
                 .addPathPatterns(
                         "/members/me",
                         "/ratings",
-                        "/ratings/**"
+                        "/ratings/**",
+                        "/favorites",
+                        "/favorites/**",
+                        "/movie-records",
+                        "/movie-records/**"
                 );
     }
 }

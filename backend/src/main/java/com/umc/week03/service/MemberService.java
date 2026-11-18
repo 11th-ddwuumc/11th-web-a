@@ -32,11 +32,24 @@ public class MemberService {
             throw new ApiException(
                     HttpStatus.CONFLICT,
                     "MEMBER409_2",
-                    "이미 사용 중인 닉네임입니다.");
+                    "이미 사용 중인 닉네임입니다."
+            );
         }
 
         member.updateNickname(request.nickname());
         return MemberResponse.from(member);
+    }
+
+    // 이메일 중복 확인
+    @Transactional(readOnly = true)
+    public boolean isEmailAvailable(String email) {
+        return !memberRepository.existsByEmail(email);
+    }
+
+    // 닉네임 중복 확인
+    @Transactional(readOnly = true)
+    public boolean isNicknameAvailable(String nickname) {
+        return !memberRepository.existsByNickname(nickname);
     }
 
     private Member findMember(Long memberId) {

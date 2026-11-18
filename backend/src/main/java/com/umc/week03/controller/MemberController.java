@@ -8,6 +8,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/members")
 @RequiredArgsConstructor
@@ -28,5 +30,23 @@ public class MemberController {
             Long memberId,
             @Valid @RequestBody UpdateNicknameRequest request) {
         return memberService.updateMe(memberId, request);
+    }
+
+    // 이메일 중복 확인
+    @GetMapping("/email/{email}")
+    public Map<String, Boolean> checkEmail(
+            @PathVariable String email) {
+
+        boolean available = memberService.isEmailAvailable(email);
+        return Map.of("available", available);
+    }
+
+    // 닉네임 중복 확인
+    @GetMapping("/nickname/{nickname}")
+    public Map<String, Boolean> checkNickname(
+            @PathVariable String nickname) {
+
+        boolean available = memberService.isNicknameAvailable(nickname);
+        return Map.of("available", available);
     }
 }

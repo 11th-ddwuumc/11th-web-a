@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import { getMovieDetail } from "../../api/movies/get-movie-detail";
 import { BookmarkButton } from "../../components/bookmark-button";
+import { MovieRatingPanel } from "../../components/movies/movie-rating-panel";
 import { getMovieDetailErrorMessage } from "../../utils/movies/get-movie-detail-error-message";
 
 const TMDB_POSTER_BASE_URL = "https://image.tmdb.org/t/p/w500";
@@ -138,6 +139,8 @@ export function MovieDetailPage() {
           <p className="mt-3 leading-7 text-[var(--color-text-secondary)]">
             {movie.overview}
           </p>
+
+          <MovieRatingPanel movieId={movie.id} />
         </section>
       </div>
     </main>

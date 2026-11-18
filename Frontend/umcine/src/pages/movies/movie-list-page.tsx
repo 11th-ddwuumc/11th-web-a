@@ -16,10 +16,13 @@ export function MovieListPage() {
     queryFn: () => getMovies({page}),
   });
 
+  //요청이 완료되기 전에는 빈 배열 사용
   const movies = moviesQuery.data?.results ?? [];
 
+  // TMDB에서 받은 전체 페이지 수
   const totalPages = moviesQuery.data?.total_pages ?? 0;
 
+  //TDMb 데이터를 MovieCard에서 사용하는 형태로 변경
   const cardMovies: MovieCardItem[] = movies.map((movie) => ({
     id: movie.id,
     title: movie.title,

@@ -1,4 +1,7 @@
 import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { getMe } from "../../api/members/me";
+import { useAuthStore } from "../../stores/auth-store";
 
 const menuClass =
   "whitespace-nowrap text-sm font-bold text-[var(--color-text-secondary)] no-underline transition-colors hover:text-[var(--color-text-primary)]";
@@ -7,6 +10,15 @@ const activeMenuClass =
   "text-[var(--color-text-primary)] underline";
 
 export function Header() {
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const meQuery = useQuery({
+    queryKey: ["members", "me"],
+    queryFn: getMe,
+    enabled: Boolean(accessToken),
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+
   return (
     <header className="sticky top-0 z-50 flex flex-wrap items-center gap-4 border-b border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-4 py-4 sm:flex-nowrap sm:gap-6 sm:px-8 lg:px-20 lg:py-6">
       <Link
@@ -46,19 +58,31 @@ export function Header() {
           검색
         </Link>
 
-        <Link
-          to="/myPage"
-          className={menuClass}
-          activeProps={{
-            className: activeMenuClass,
-          }}
-        >
-          내정보
-        </Link>  
+        {accessToken ? (
+          <Link
+            to="/myPage"
+            className={menuClass}
+            activeProps={{ className: activeMenuClass }}
+          >
+            내정보
+          </Link>
+        ) : null}
 
       </nav>
 
       <div className="ml-auto flex items-center gap-[10px]">
+        {!accessToken ? (
+          <Link
+            to="/login"
+            className="hidden text-sm font-bold text-[var(--color-text-secondary)] no-underline transition-colors hover:text-[var(--color-text-primary)] md:block"
+            activeProps={{ className: activeMenuClass }}
+          >
+            로그인
+          </Link>
+        ) : meQuery.isLoading ? (
+          <span className="hidden h-[42px] w-24 animate-pulse rounded-lg bg-gray-200 sm:block" />
+        ) : null}
+
         <Link
           to="/search"
           aria-label="검색"
@@ -71,12 +95,14 @@ export function Header() {
           />
         </Link>
 
-        <Link
-          to="/myPage"
-          className="hidden h-[42px] items-center justify-center rounded-lg bg-[var(--color-action-primary)] px-4 text-sm font-extrabold text-white no-underline transition-colors hover:bg-[var(--color-action-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-action-primary)] sm:flex"
-        >
-          마이페이지
-        </Link>
+        {accessToken && !meQuery.isLoading ? (
+          <Link
+            to="/myPage"
+            className="hidden h-[42px] items-center justify-center rounded-lg bg-[var(--color-action-primary)] px-4 text-sm font-extrabold text-white no-underline transition-colors hover:bg-[var(--color-action-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-action-primary)] sm:flex"
+          >
+            {meQuery.data?.nickname ?? "내 정보"}
+          </Link>
+        ) : null}
       </div>
     </header>
   );

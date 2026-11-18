@@ -1,15 +1,30 @@
 
 import { useState } from "react";
 import type { FormEvent } from "react";
+import { Link } from "@tanstack/react-router";
+import { useLoginMutation } from "../../hooks/use-login-mutation";
 import "./auth-pages.css";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    alert("로그인 API는 8주차에서 연결합니다.");
+  const loginMutation = useLoginMutation();
+
+  const canSubmit =
+    EMAIL_REGEX.test(email.trim()) && password.length > 0;
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!canSubmit || loginMutation.isPending) return;
+
+    loginMutation.mutate({
+      email: email.trim(),
+      password,
+    });
   };
 
   return (
@@ -38,13 +53,17 @@ export function LoginPage() {
             required
           />
 
-          <button type="submit" disabled={!email || !password}>
-            로그인
+          <button
+            type="submit"
+            disabled={!canSubmit || loginMutation.isPending}
+          >
+            {loginMutation.isPending ? "로그인 중" : "로그인"}
           </button>
         </form>
 
         <p className="auth-footer">
-          아직 계정이 없나요? <a href="/signup">회원가입</a>
+          아직 계정이 없나요?{" "}
+          <Link to="/signup">회원가입</Link>
         </p>
       </section>
     </main>

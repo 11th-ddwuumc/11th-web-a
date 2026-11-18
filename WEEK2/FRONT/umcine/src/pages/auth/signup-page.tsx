@@ -6,13 +6,13 @@ import "./signup-page.css";
 import { checkEmailDuplicate } from "../../api/members/check-email-duplicate";
 import { checkNicknameDuplicate } from "../../api/members/check-nickname-duplicate";
 
-import { signup } from "../../api/members/signup";
+import { useSignupMutation } from "../../hooks/use-signup-mutation";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const PASSWORD_REGEX =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])[A-Za-z0-9!@#$%^&*]{8,}$/;
-
+  
 const DEFAULT_FORM = {
   email: "",
   nickname: "",
@@ -31,8 +31,6 @@ type DuplicateCheckKey = "email" | "nickname";
 
 export function SignupPage() {
   const [form, setForm] = useState(DEFAULT_FORM);
-
-const [isSubmitting, setIsSubmitting] = useState(false);
 
 const [duplicateCheck, setDuplicateCheck] = useState({
   email: { ...DEFAULT_DUPLICATE_CHECK },
@@ -153,30 +151,18 @@ const handleCheckDuplicate = async (key: DuplicateCheckKey) => {
   }
 };
 
-  
-const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
+  const signupMutation = useSignupMutation();
+const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  event.preventDefault();
 
-  if (!canSubmit || isSubmitting) return;
+  if (!canSubmit || signupMutation.isPending) return;
 
-  setIsSubmitting(true);
-
-  try {
-    const response = await signup({
-      email: form.email.trim(),
-      nickname: form.nickname.trim(),
-      password: form.password,
-    });
-
-    alert(response.message);
-  } catch (error) {
-    console.error("회원가입 실패:", error);
-    alert("회원가입에 실패했어요. 다시 시도해 주세요.");
-  } finally {
-    setIsSubmitting(false);
-  }
+  signupMutation.mutate({
+    email: form.email.trim(),
+    nickname: form.nickname.trim(),
+    password: form.password,
+  });
 };
-
 
   return (
     <main className="signup-page">
@@ -312,9 +298,9 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
           <button
   type="submit"
   className="signup-submit"
-  disabled={!canSubmit || isSubmitting}
+  disabled={!canSubmit || signupMutation.isPending}
 >
-  {isSubmitting ? "가입 중" : "가입하기"}
+  {signupMutation.isPending ? "가입 중" : "가입하기"}
 </button>
 
           {/* 로그인 링크 */}

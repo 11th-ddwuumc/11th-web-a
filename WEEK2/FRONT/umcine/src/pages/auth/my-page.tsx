@@ -1,103 +1,130 @@
 
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+
+import { getMe } from "../../api/members/me";
+import { getFavorites } from "../../api/favorites";
+
 import "./auth-pages.css";
 
-const member = {
-  nickname: "gs0428",
-  email: "gwangsoo@cinemalab.kr",
-};
-
-const favoriteMovies = [
-  {
-    id: 1,
-    title: "스파이더맨: 브랜드 뉴 데이",
-    date: "2026.07.29",
-    poster: "",
-    color: "poster-red",
-  },
-  {
-    id: 2,
-    title: "오디세이",
-    date: "2026.08.05",
-    poster: "",
-    color: "poster-dark",
-  },
-  {
-    id: 3,
-    title: "미니언즈 & 몬스터즈",
-    date: "2026.07.15",
-    poster: "",
-    color: "poster-yellow",
-  },
-];
-
 export function MyPage() {
+  const meQuery = useQuery({
+    queryKey: ["members", "me"],
+    queryFn: getMe,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+
+  const favoritesQuery = useQuery({
+    queryKey: ["favorites"],
+    queryFn: getFavorites,
+    retry: false,
+  });
+
+  const member = meQuery.data;
+  const favoriteMovies = favoritesQuery.data ?? [];
+
   return (
     <main className="mypage">
       <div className="mypage-inner">
         <header className="mypage-heading">
           <h1>내 정보</h1>
+
           <Link to="/my/edit" className="mypage-primary">
             정보 수정
           </Link>
         </header>
 
+        {/* 기본 정보 */}
         <section className="mypage-section">
           <h2>기본 정보</h2>
 
-          <div className="profile-info">
-            <div className="profile-avatar">
-              <svg viewBox="0 0 64 64" aria-hidden="true">
-                <circle cx="32" cy="22" r="10" fill="currentColor" />
-                <path
-                  d="M12 53c0-12 9-19 20-19s20 7 20 19"
-                  fill="currentColor"
-                />
-              </svg>
-            </div>
+          {meQuery.isLoading ? (
+            <p>회원 정보를 불러오는 중...</p>
+          ) : meQuery.isError ? (
+            <p>회원 정보를 불러오지 못했어요.</p>
+          ) : (
+            <div className="profile-info">
+              <div className="profile-avatar">
+                <svg viewBox="0 0 64 64" aria-hidden="true">
+                  <circle cx="32" cy="22" r="10" fill="currentColor" />
+                  <path
+                    d="M12 53c0-12 9-19 20-19s20 7 20 19"
+                    fill="currentColor"
+                  />
+                </svg>
+              </div>
 
-            <div className="profile-detail">
-              <span>닉네임</span>
-              <strong>{member.nickname}</strong>
-            </div>
+              <div className="profile-detail">
+                <span>닉네임</span>
+                <strong>{member?.nickname}</strong>
+              </div>
 
-            <div className="profile-detail">
-              <span>이메일</span>
-              <strong>{member.email}</strong>
+              <div className="profile-detail">
+                <span>이메일</span>
+                <strong>{member?.email}</strong>
+              </div>
             </div>
-          </div>
+          )}
         </section>
 
+        {/* 즐겨찾기 목록 */}
         <section className="mypage-section favorites-section">
           <h2>내 즐겨찾기</h2>
 
-          <div className="favorite-grid">
-            {favoriteMovies.map((movie) => (
-              <article className="favorite-movie" key={movie.id}>
-                {movie.poster ? (
-                  <img
-                    src={movie.poster}
-                    alt={`${movie.title} 포스터`}
-                    className="favorite-poster"
-                  />
-                ) : (
-                  <div className={`favorite-poster ${movie.color}`}>
-                    <span>{movie.title}</span>
-                  </div>
-                )}
+          {favoritesQuery.isLoading ? (
+            <p>즐겨찾기를 불러오는 중...</p>
+          ) : favoritesQuery.isError ? (
+            <p>즐겨찾기 목록을 불러오지 못했어요.</p>
+          ) : favoriteMovies.length === 0 ? (
+            <p>아직 즐겨찾기한 영화가 없어요.</p>
+          ) : (
+            <div className="favorite-grid">
+              {favoriteMovies.map((favorite) => (
+                <article
+                  className="favorite-movie"
+                  key={favorite.favoriteId}
+                >
+                  <Link
+                    to="/movies/$movieId"
+                    params={{
+                      movieId: String(favorite.movieId),
+                    }}
+                  >
+                    <div className="favorite-poster poster-dark">
+                      <span>영화 #{favorite.movieId}</span>
+                    </div>
 
-                <h3>{movie.title}</h3>
-                <p>{movie.date}</p>
-              </article>
-            ))}
-          </div>
+                    <h3>영화 #{favorite.movieId}</h3>
+                  </Link>
+
+                  <p>
+                    등록일:{" "}
+                    {new Date(
+                      favorite.createdAt
+                    ).toLocaleDateString("ko-KR")}
+                  </p>
+                </article>
+              ))}
+            </div>
+          )}
 
           <div className="favorite-pagination">
-            <button type="button" disabled aria-label="이전 페이지">
+            <button
+              type="button"
+              disabled
+              aria-label="이전 페이지"
+            >
               ‹
             </button>
+
             <span className="current-page">1</span>
-            <button type="button" disabled aria-label="다음 페이지">
+
+            <button
+              type="button"
+              disabled
+              aria-label="다음 페이지"
+            >
               ›
             </button>
           </div>

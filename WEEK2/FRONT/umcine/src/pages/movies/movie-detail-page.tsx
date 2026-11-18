@@ -9,6 +9,8 @@ import {
 } from "../../utils/movies/tmdb-image";
 import { BookmarkButton } from "../../components/bookmark-button";
 
+import { MovieRating } from "../../components/movie-rating";
+
 export function MovieDetailPage() {
   const { movieId } = useParams({ from: "/movies/$movieId" });
 
@@ -153,40 +155,8 @@ export function MovieDetailPage() {
           <BookmarkButton movieId={movie.id} />
         </div>
 
-        {/* 내 평점 */}
-        <div>
-          <h2 className="text-base font-bold text-gray-900">
-            내 평점
-          </h2>
-
-          <p className="mt-1 text-[10px] text-gray-400">
-            별점을 눌러 평가해주세요.
-          </p>
-
-          <div className="mt-3 flex gap-1">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
-                type="button"
-                className="flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 bg-white text-sm text-gray-400"
-              >
-                ★
-              </button>
-            ))}
-          </div>
-
-          <textarea
-            placeholder="영화를 보고 느낀 점을 남겨보세요."
-            className="mt-3 h-14 w-full resize-none rounded-md border border-gray-200 bg-white p-3 text-[10px] outline-none placeholder:text-gray-400"
-          />
-
-          <button
-            type="button"
-            className="mt-2 h-8 w-full rounded-md bg-gray-900 text-xs font-semibold text-white"
-          >
-            평점 저장
-          </button>
-        </div>
+       {/* 내 평점 */}
+<MovieRating movieId={movie.id} />
       </section>
     </main>
   );

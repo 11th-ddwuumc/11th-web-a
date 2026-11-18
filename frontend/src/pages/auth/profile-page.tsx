@@ -1,150 +1,208 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import {
-  getAccessToken,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+
+import {
+  getMe,
+  updateNickname,
+} from "../../api/authApi";
+import {
   getMyFavorites,
   removeFavorite,
-  type Favorite,
 } from "../../api/favoriteApi";
+import { useAuthStore } from "../../stores/auth-store";
 import "./auth.css";
 
 export function ProfilePage() {
-  const [favorites, setFavorites] = useState<Favorite[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [removingMovieId, setRemovingMovieId] = useState<number | null>(null);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const [nickname, setNickname] = useState("테스트회원");
-  const [draftNickname, setDraftNickname] = useState(nickname);
-  const [email] = useState("test@example.com");
+  const setAccessToken = useAuthStore(
+    (state) => state.setAccessToken,
+  );
+
+  const [draftNickname, setDraftNickname] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [removingMovieId, setRemovingMovieId] = useState<
+    number | null
+  >(null);
 
-  const isLoggedIn = Boolean(getAccessToken());
+  const memberQuery = useQuery({
+    queryKey: ["members", "me"],
+    queryFn: getMe,
+  });
 
-  useEffect(() => {
-    if (!isLoggedIn) {
-      setIsLoading(false);
+  const favoritesQuery = useQuery({
+    queryKey: ["favorites", "list"],
+    queryFn: getMyFavorites,
+  });
+
+  const updateNicknameMutation = useMutation({
+    mutationFn: updateNickname,
+    onSuccess: (member) => {
+      queryClient.setQueryData(
+        ["members", "me"],
+        member,
+      );
+      setIsEditing(false);
+    },
+  });
+
+  const removeFavoriteMutation = useMutation({
+    mutationFn: removeFavorite,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["favorites"],
+      });
+    },
+    onSettled: () => {
+      setRemovingMovieId(null);
+    },
+  });
+
+  function handleEdit() {
+    setDraftNickname(memberQuery.data?.nickname ?? "");
+    setIsEditing(true);
+  }
+
+  function handleSave() {
+    const nickname = draftNickname.trim();
+
+    if (nickname.length < 2 || nickname.length > 12) {
+      alert("닉네임은 2~12자로 입력해주세요.");
       return;
     }
 
-    let cancelled = false;
+    updateNicknameMutation.mutate(nickname);
+  }
 
-    async function loadFavorites() {
-      try {
-        const result = await getMyFavorites();
-
-        if (!cancelled) {
-          setFavorites(result);
-          setError("");
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "즐겨찾기를 불러오지 못했습니다."
-          );
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    void loadFavorites();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isLoggedIn]);
-
-  const handleRemoveFavorite = async (movieId: number) => {
+  function handleRemoveFavorite(movieId: number) {
     if (!window.confirm("이 영화를 즐겨찾기에서 해제할까요?")) {
       return;
     }
 
     setRemovingMovieId(movieId);
+    removeFavoriteMutation.mutate(movieId);
+  }
 
-    try {
-      await removeFavorite(movieId);
+  async function handleLogout() {
+    setAccessToken(null);
+    queryClient.clear();
 
-      setFavorites((current) =>
-        current.filter((favorite) => favorite.movieId !== movieId)
-      );
-    } catch (err) {
-      alert(
-        err instanceof Error
-          ? err.message
-          : "즐겨찾기 해제에 실패했습니다."
-      );
-    } finally {
-      setRemovingMovieId(null);
-    }
-  };
+    await navigate({ to: "/login" });
+  }
 
-  const handleEdit = () => {
-    setDraftNickname(nickname);
-    setIsEditing(true);
-  };
+  if (memberQuery.isPending) {
+    return (
+      <main className="profile-page" role="status">
+        회원 정보를 불러오는 중...
+      </main>
+    );
+  }
 
-  const handleSave = () => {
-    const value = draftNickname.trim();
+  if (memberQuery.isError) {
+    return (
+      <main className="profile-page">
+        <h1 className="profile-title">내 정보</h1>
 
-    if (value.length < 2 || value.length > 12) {
-      alert("닉네임은 2~12자로 입력해주세요.");
-      return;
-    }
+        <p className="auth-error" role="alert">
+          {memberQuery.error.message}
+        </p>
 
-    setNickname(value);
-    setIsEditing(false);
-    alert("닉네임은 화면에서만 변경되었습니다.");
-  };
+        <button
+          className="profile-edit-btn"
+          type="button"
+          onClick={() => void memberQuery.refetch()}
+        >
+          다시 시도
+        </button>
+
+        <button
+          className="profile-edit-btn"
+          type="button"
+          onClick={() => void handleLogout()}
+          style={{ marginLeft: "8px" }}
+        >
+          로그아웃
+        </button>
+      </main>
+    );
+  }
+
+  const member = memberQuery.data;
 
   return (
     <main className="profile-page">
       <div className="profile-heading">
-        <h1 className="profile-title">내 정보</h1>
+        <h1 className="profile-title">
+          내 정보
+        </h1>
 
-        {isEditing ? (
-          <div style={{ display: "flex", gap: "8px" }}>
+        <div style={{ display: "flex", gap: "8px" }}>
+          {isEditing ? (
+            <>
+              <button
+                className="profile-edit-btn"
+                type="button"
+                style={{ background: "#6b7280" }}
+                onClick={() => setIsEditing(false)}
+              >
+                취소
+              </button>
+
+              <button
+                className="profile-edit-btn"
+                type="button"
+                disabled={updateNicknameMutation.isPending}
+                onClick={handleSave}
+              >
+                {updateNicknameMutation.isPending
+                  ? "저장 중..."
+                  : "저장"}
+              </button>
+            </>
+          ) : (
             <button
               className="profile-edit-btn"
               type="button"
-              style={{ background: "#6b7280" }}
-              onClick={() => setIsEditing(false)}
+              onClick={handleEdit}
             >
-              취소
+              정보 수정
             </button>
+          )}
 
-            <button
-              className="profile-edit-btn"
-              type="button"
-              onClick={handleSave}
-            >
-              저장
-            </button>
-          </div>
-        ) : (
           <button
             className="profile-edit-btn"
             type="button"
-            onClick={handleEdit}
+            onClick={() => void handleLogout()}
+            style={{ background: "#6b7280" }}
           >
-            정보 수정
+            로그아웃
           </button>
-        )}
+        </div>
       </div>
 
       <section>
-        <h2 className="profile-section-title">기본 정보</h2>
+        <h2 className="profile-section-title">
+          기본 정보
+        </h2>
 
         <div className="profile-info">
-          <div className="profile-avatar" aria-hidden="true">
+          <div
+            className="profile-avatar"
+            aria-hidden="true"
+          >
             👤
           </div>
 
           <div className="profile-info-item">
-            <div className="profile-info-label">닉네임</div>
+            <div className="profile-info-label">
+              닉네임
+            </div>
 
             {isEditing ? (
               <input
@@ -156,34 +214,54 @@ export function ProfilePage() {
               />
             ) : (
               <div className="profile-info-value">
-                {nickname}
+                {member.nickname}
               </div>
             )}
           </div>
 
           <div className="profile-info-item">
-            <div className="profile-info-label">이메일</div>
-            <div className="profile-info-value">{email}</div>
+            <div className="profile-info-label">
+              이메일
+            </div>
+
+            <div className="profile-info-value">
+              {member.email}
+            </div>
           </div>
         </div>
+
+        {updateNicknameMutation.isError && (
+          <p className="auth-error" role="alert">
+            {updateNicknameMutation.error.message}
+          </p>
+        )}
       </section>
 
       <section className="profile-favorites">
-        <h2 className="profile-section-title">내 즐겨찾기</h2>
+        <h2 className="profile-section-title">
+          내 즐겨찾기
+        </h2>
 
-        {!isLoggedIn ? (
-          <p>즐겨찾기를 보려면 로그인이 필요합니다.</p>
-        ) : isLoading ? (
+        {favoritesQuery.isPending ? (
           <p>즐겨찾기를 불러오는 중...</p>
-        ) : error ? (
-          <p style={{ color: "#dc2626" }}>
-            즐겨찾기를 불러오지 못했습니다: {error}
-          </p>
-        ) : favorites.length === 0 ? (
+        ) : favoritesQuery.isError ? (
+          <div>
+            <p style={{ color: "#dc2626" }}>
+              {favoritesQuery.error.message}
+            </p>
+
+            <button
+              type="button"
+              onClick={() => void favoritesQuery.refetch()}
+            >
+              다시 시도
+            </button>
+          </div>
+        ) : favoritesQuery.data.length === 0 ? (
           <p>아직 즐겨찾기한 영화가 없습니다.</p>
         ) : (
           <div className="profile-movie-list">
-            {favorites.map((favorite) => (
+            {favoritesQuery.data.map((favorite) => (
               <div
                 className="profile-movie"
                 key={favorite.favoriteId}
@@ -216,7 +294,9 @@ export function ProfilePage() {
                   onClick={() =>
                     handleRemoveFavorite(favorite.movieId)
                   }
-                  disabled={removingMovieId === favorite.movieId}
+                  disabled={
+                    removingMovieId === favorite.movieId
+                  }
                   style={{
                     marginTop: "10px",
                     padding: "7px 10px",
@@ -233,6 +313,12 @@ export function ProfilePage() {
               </div>
             ))}
           </div>
+        )}
+
+        {removeFavoriteMutation.isError && (
+          <p className="auth-error" role="alert">
+            {removeFavoriteMutation.error.message}
+          </p>
         )}
       </section>
     </main>

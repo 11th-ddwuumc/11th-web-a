@@ -1,10 +1,26 @@
 ﻿import { Link, useParams } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { useQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+
 import { getMovieDetail } from "../../api/movies";
+import {
+  getFavoriteStatus,
+  addFavorite,
+  removeFavorite,
+} from "../../api/favoriteApi";
+import {
+  getMyRatings,
+  createRating,
+  updateRating,
+  deleteRating,
+} from "../../api/ratingApi";
+import { useAuthStore } from "../../stores/auth-store";
 import type { Movie } from "../../types/movie";
 import { cn } from "../../utils/cn";
-import { useBookmarkStore } from "../../stores/bookmark-store";
 
 export function MovieDetailPage() {
   const { movieId: movieIdParam } = useParams({
@@ -12,7 +28,8 @@ export function MovieDetailPage() {
   });
 
   const movieId = Number(movieIdParam);
-  const isValidMovieId = Number.isInteger(movieId) && movieId > 0;
+  const isValidMovieId =
+    Number.isInteger(movieId) && movieId > 0;
 
   const movieDetailQuery = useQuery({
     queryKey: ["movies", "detail", movieId],
@@ -86,22 +103,157 @@ export function MovieDetailPage() {
 }
 
 function MovieDetail({ movie }: { movie: Movie }) {
+  const queryClient = useQueryClient();
+
+  const accessToken = useAuthStore(
+    (state) => state.accessToken,
+  );
+  const isLoggedIn = Boolean(accessToken);
+
   const [rating, setRating] = useState(0);
   const [review, setReview] = useState("");
   const [saved, setSaved] = useState(false);
 
-  const isBookmarked = useBookmarkStore((state) =>
-    state.bookmarkedMovieIds.includes(movie.id),
+  const favoriteQuery = useQuery({
+    queryKey: ["favorites", "status", movie.id],
+    queryFn: () => getFavoriteStatus(movie.id),
+    enabled: isLoggedIn,
+  });
+
+  const ratingsQuery = useQuery({
+    queryKey: ["ratings", "me"],
+    queryFn: getMyRatings,
+    enabled: isLoggedIn,
+  });
+
+  const myRating = ratingsQuery.data?.find(
+    (item) => item.movieId === movie.id,
   );
 
-  const toggleBookmark = useBookmarkStore(
-    (state) => state.toggleBookmark,
-  );
+  const isBookmarked =
+    favoriteQuery.data?.isFavorite ?? false;
+
+  const favoriteMutation = useMutation({
+    mutationFn: async () => {
+      if (isBookmarked) {
+        await removeFavorite(movie.id);
+      } else {
+        await addFavorite(movie.id);
+      }
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["favorites"],
+      });
+    },
+  });
+
+  const createRatingMutation = useMutation({
+    mutationFn: createRating,
+    onSuccess: async () => {
+      setSaved(true);
+
+      await queryClient.invalidateQueries({
+        queryKey: ["ratings"],
+      });
+    },
+  });
+
+  const updateRatingMutation = useMutation({
+    mutationFn: ({
+      ratingId,
+      score,
+      comment,
+    }: {
+      ratingId: number;
+      score: number;
+      comment: string;
+    }) => updateRating(ratingId, { score, comment }),
+    onSuccess: async () => {
+      setSaved(true);
+
+      await queryClient.invalidateQueries({
+        queryKey: ["ratings"],
+      });
+    },
+  });
+
+  const deleteRatingMutation = useMutation({
+    mutationFn: deleteRating,
+    onSuccess: async () => {
+      setRating(0);
+      setReview("");
+      setSaved(false);
+
+      await queryClient.invalidateQueries({
+        queryKey: ["ratings"],
+      });
+    },
+  });
+
+  function handleToggleFavorite() {
+    if (!isLoggedIn) {
+      alert("즐겨찾기는 로그인 후 이용할 수 있습니다.");
+      return;
+    }
+
+    favoriteMutation.mutate();
+  }
 
   function saveReview(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSaved(true);
+
+    if (!isLoggedIn) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+
+    if (rating < 1 || rating > 5) {
+      alert("1~5점 사이의 평점을 선택해주세요.");
+      return;
+    }
+
+    setSaved(false);
+
+    if (myRating) {
+      updateRatingMutation.mutate({
+        ratingId: myRating.ratingId,
+        score: rating,
+        comment: review,
+      });
+    } else {
+      createRatingMutation.mutate({
+        movieId: movie.id,
+        score: rating,
+        comment: review,
+      });
+    }
   }
+
+  function handleLoadRating() {
+    if (!myRating) return;
+
+    setRating(myRating.score);
+    setReview(myRating.comment ?? "");
+    setSaved(false);
+  }
+
+  function handleDeleteRating() {
+    if (!myRating) return;
+
+    if (window.confirm("작성한 평점을 삭제할까요?")) {
+      deleteRatingMutation.mutate(myRating.ratingId);
+    }
+  }
+
+  const ratingError =
+    createRatingMutation.error ??
+    updateRatingMutation.error ??
+    deleteRatingMutation.error;
+
+  const isSavingRating =
+    createRatingMutation.isPending ||
+    updateRatingMutation.isPending;
 
   return (
     <main className="flex-1 pb-16">
@@ -145,7 +297,8 @@ function MovieDetail({ movie }: { movie: Movie }) {
             </p>
 
             <p className="mt-2 text-xs leading-6">
-              {movie.releaseDate} · {movie.genres.join(" · ")} ·{" "}
+              {movie.releaseDate} ·{" "}
+              {movie.genres.join(" · ")} ·{" "}
               {movie.runtime}
             </p>
           </div>
@@ -165,15 +318,21 @@ function MovieDetail({ movie }: { movie: Movie }) {
           </h2>
 
           <p className="mt-3 text-sm leading-7 text-gray-500">
-            {movie.overview || "영화 소개 정보가 없습니다."}
+            {movie.overview ||
+              "영화 소개 정보가 없습니다."}
           </p>
 
           <button
             type="button"
             aria-pressed={isBookmarked}
-            onClick={() => toggleBookmark(movie.id)}
+            onClick={handleToggleFavorite}
+            disabled={
+              !isLoggedIn ||
+              favoriteQuery.isPending ||
+              favoriteMutation.isPending
+            }
             className={cn(
-              "mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-3 text-xs font-bold text-white",
+              "mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-3 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50",
               isBookmarked && "bg-blue-700",
             )}
           >
@@ -186,8 +345,31 @@ function MovieDetail({ movie }: { movie: Movie }) {
               }
               alt=""
             />
-            즐겨찾기
+
+            {favoriteMutation.isPending
+              ? "처리 중..."
+              : isBookmarked
+                ? "즐겨찾기 해제"
+                : "즐겨찾기"}
           </button>
+
+          {!isLoggedIn && (
+            <p className="mt-2 text-xs text-gray-500">
+              즐겨찾기는 로그인 후 이용할 수 있습니다.
+            </p>
+          )}
+
+          {favoriteQuery.isError && (
+            <p className="mt-2 text-xs text-red-600">
+              즐겨찾기 상태를 불러오지 못했습니다.
+            </p>
+          )}
+
+          {favoriteMutation.isError && (
+            <p className="mt-2 text-xs text-red-600">
+              {favoriteMutation.error.message}
+            </p>
+          )}
         </section>
 
         <form
@@ -201,6 +383,26 @@ function MovieDetail({ movie }: { movie: Movie }) {
           <p className="mt-2 text-xs text-gray-400">
             별점을 매기고, 후기를 남겨보세요.
           </p>
+
+          {myRating && (
+            <div className="mt-3 rounded-md bg-gray-100 p-3">
+              <p className="text-sm font-semibold">
+                저장된 평점: {myRating.score}점
+              </p>
+
+              <p className="mt-1 text-xs text-gray-600">
+                {myRating.comment || "작성한 후기가 없습니다."}
+              </p>
+
+              <button
+                type="button"
+                onClick={handleLoadRating}
+                className="mt-2 text-xs font-semibold text-blue-600 underline"
+              >
+                기존 평점 불러오기
+              </button>
+            </div>
+          )}
 
           <fieldset className="mt-3 flex gap-2">
             <legend className="sr-only">
@@ -218,7 +420,6 @@ function MovieDetail({ movie }: { movie: Movie }) {
                   name="rating"
                   value={value}
                   checked={rating === value}
-                  required
                   onChange={() => {
                     setRating(value);
                     setSaved(false);
@@ -252,20 +453,57 @@ function MovieDetail({ movie }: { movie: Movie }) {
           />
 
           <button
-            className="mt-2 w-full rounded-md bg-[#191b1f] py-3 text-xs font-bold text-white hover:bg-gray-800"
+            className="mt-2 w-full rounded-md bg-[#191b1f] py-3 text-xs font-bold text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
             type="submit"
+            disabled={
+              !isLoggedIn ||
+              rating === 0 ||
+              isSavingRating
+            }
           >
-            평점 저장
+            {isSavingRating
+              ? "저장 중..."
+              : myRating
+                ? "평점 수정"
+                : "평점 저장"}
           </button>
 
-          <p
-            className="mt-2 text-xs text-gray-500"
-            role="status"
-          >
-            {saved
-              ? "이 화면에 저장했어요. 페이지를 벗어나면 초기화돼요."
-              : ""}
-          </p>
+          {myRating && (
+            <button
+              type="button"
+              onClick={handleDeleteRating}
+              disabled={deleteRatingMutation.isPending}
+              className="mt-2 w-full rounded-md border border-red-500 py-3 text-xs font-bold text-red-600 disabled:opacity-50"
+            >
+              {deleteRatingMutation.isPending
+                ? "삭제 중..."
+                : "평점 삭제"}
+            </button>
+          )}
+
+          {saved && (
+            <p
+              className="mt-2 text-xs text-green-600"
+              role="status"
+            >
+              평점 저장 요청이 성공했습니다.
+            </p>
+          )}
+
+          {ratingError && (
+            <p
+              className="mt-2 text-xs text-red-600"
+              role="alert"
+            >
+              {ratingError.message}
+            </p>
+          )}
+
+          {!isLoggedIn && (
+            <p className="mt-2 text-xs text-gray-500">
+              평점 작성은 로그인 후 이용할 수 있습니다.
+            </p>
+          )}
         </form>
       </div>
     </main>

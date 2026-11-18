@@ -1,35 +1,69 @@
 import { useRef, useState, type FormEvent } from "react";
-import { Link } from "@tanstack/react-router";
-import { checkEmail, checkNickname, createMember } from "../../api/memberApi";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useMutation } from "@tanstack/react-query";
+
+import {
+  checkEmail,
+  checkNickname,
+} from "../../api/memberApi";
+import { signup } from "../../api/authApi";
 import "./auth.css";
 
 export function SignupPage() {
+  const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [nickname, setNickname] = useState("");
   const [password, setPassword] = useState("");
-  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [passwordConfirm, setPasswordConfirm] =
+    useState("");
 
-  const [isEmailAvailable, setIsEmailAvailable] = useState<boolean | null>(null);
-  const [isNicknameAvailable, setIsNicknameAvailable] = useState<boolean | null>(null);
+  const [isEmailAvailable, setIsEmailAvailable] =
+    useState<boolean | null>(null);
 
-  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
-  const [isCheckingNickname, setIsCheckingNickname] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isNicknameAvailable, setIsNicknameAvailable] =
+    useState<boolean | null>(null);
 
-  const [emailCheckError, setEmailCheckError] = useState("");
-  const [nicknameCheckError, setNicknameCheckError] = useState("");
+  const [isCheckingEmail, setIsCheckingEmail] =
+    useState(false);
+
+  const [isCheckingNickname, setIsCheckingNickname] =
+    useState(false);
+
+  const [emailCheckError, setEmailCheckError] =
+    useState("");
+
+  const [nicknameCheckError, setNicknameCheckError] =
+    useState("");
 
   const emailInputRef = useRef(email);
   const nicknameInputRef = useRef(nickname);
 
-  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const isNicknameValid = nickname.length >= 2 && nickname.length <= 12;
+  const signupMutation = useMutation({
+    mutationFn: signup,
+    onSuccess: async () => {
+      alert("회원가입이 완료되었습니다!");
+
+      await navigate({ to: "/login" });
+    },
+  });
+
+  const isEmailValid =
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  const isNicknameValid =
+    nickname.length >= 2 && nickname.length <= 12;
 
   const isPasswordValid =
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])[A-Za-z0-9!@#$%^&*]{8,}$/.test(password);
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])[A-Za-z0-9!@#$%^&*]{8,}$/.test(
+      password,
+    );
 
   const isPasswordConfirmValid =
-    passwordConfirm.length > 0 && password === passwordConfirm;
+    passwordConfirm.length > 0 &&
+    password === passwordConfirm;
+
+  const isSubmitting = signupMutation.isPending;
 
   const isFormValid =
     isEmailValid &&
@@ -42,24 +76,31 @@ export function SignupPage() {
     !isCheckingNickname &&
     !isSubmitting;
 
-  const handleEmailChange = (value: string) => {
+  function handleEmailChange(value: string) {
     emailInputRef.current = value;
     setEmail(value);
     setIsEmailAvailable(null);
     setEmailCheckError("");
-  };
+  }
 
-  const handleNicknameChange = (value: string) => {
+  function handleNicknameChange(value: string) {
     nicknameInputRef.current = value;
     setNickname(value);
     setIsNicknameAvailable(null);
     setNicknameCheckError("");
-  };
+  }
 
-  const handleCheckEmail = async () => {
-    if (!isEmailValid || isCheckingEmail || isSubmitting) return;
+  async function handleCheckEmail() {
+    if (
+      !isEmailValid ||
+      isCheckingEmail ||
+      isSubmitting
+    ) {
+      return;
+    }
 
     const checkedEmail = email;
+
     setIsCheckingEmail(true);
     setIsEmailAvailable(null);
     setEmailCheckError("");
@@ -70,19 +111,30 @@ export function SignupPage() {
       if (emailInputRef.current === checkedEmail) {
         setIsEmailAvailable(result.available);
       }
-    } catch {
+    } catch (error) {
       if (emailInputRef.current === checkedEmail) {
-        setEmailCheckError("이메일 중복 확인에 실패했습니다.");
+        setEmailCheckError(
+          error instanceof Error
+            ? error.message
+            : "이메일 중복 확인에 실패했습니다.",
+        );
       }
     } finally {
       setIsCheckingEmail(false);
     }
-  };
+  }
 
-  const handleCheckNickname = async () => {
-    if (!isNicknameValid || isCheckingNickname || isSubmitting) return;
+  async function handleCheckNickname() {
+    if (
+      !isNicknameValid ||
+      isCheckingNickname ||
+      isSubmitting
+    ) {
+      return;
+    }
 
     const checkedNickname = nickname;
+
     setIsCheckingNickname(true);
     setIsNicknameAvailable(null);
     setNicknameCheckError("");
@@ -93,59 +145,46 @@ export function SignupPage() {
       if (nicknameInputRef.current === checkedNickname) {
         setIsNicknameAvailable(result.available);
       }
-    } catch {
+    } catch (error) {
       if (nicknameInputRef.current === checkedNickname) {
-        setNicknameCheckError("닉네임 중복 확인에 실패했습니다.");
+        setNicknameCheckError(
+          error instanceof Error
+            ? error.message
+            : "닉네임 중복 확인에 실패했습니다.",
+        );
       }
     } finally {
       setIsCheckingNickname(false);
     }
-  };
+  }
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!isFormValid) return;
 
-    setIsSubmitting(true);
-
-    try {
-      const result = await createMember({ email, nickname, password });
-
-      if (!result.isSuccess) {
-        throw new Error(result.message || "회원가입에 실패했습니다.");
-      }
-
-      alert("회원가입이 완료되었습니다!");
-
-      setEmail("");
-      setNickname("");
-      setPassword("");
-      setPasswordConfirm("");
-
-      emailInputRef.current = "";
-      nicknameInputRef.current = "";
-
-      setIsEmailAvailable(null);
-      setIsNicknameAvailable(null);
-    } catch (error) {
-      alert(
-        error instanceof Error
-          ? `회원가입 실패: ${error.message}`
-          : "회원가입에 실패했습니다."
-      );
-    } finally {
-      setIsSubmitting(false);
+    if (!isFormValid) {
+      return;
     }
-  };
+
+    signupMutation.mutate({
+      email,
+      nickname,
+      password,
+    });
+  }
 
   return (
     <main className="auth-page">
       <div className="auth-container">
-        <h1 className="auth-title">회원가입</h1>
+        <h1 className="auth-title">
+          회원가입
+        </h1>
 
         <form onSubmit={handleSubmit}>
           <div className="auth-field">
-            <label className="auth-label" htmlFor="signup-email">
+            <label
+              className="auth-label"
+              htmlFor="signup-email"
+            >
               이메일
             </label>
 
@@ -156,39 +195,59 @@ export function SignupPage() {
                 type="email"
                 placeholder="name@example.com"
                 value={email}
-                onChange={(event) => handleEmailChange(event.target.value)}
+                onChange={(event) =>
+                  handleEmailChange(event.target.value)
+                }
                 disabled={isSubmitting}
+                required
               />
 
               <button
                 className="auth-check-btn"
                 type="button"
-                onClick={handleCheckEmail}
-                disabled={!isEmailValid || isCheckingEmail || isSubmitting}
+                onClick={() => void handleCheckEmail()}
+                disabled={
+                  !isEmailValid ||
+                  isCheckingEmail ||
+                  isSubmitting
+                }
               >
-                {isCheckingEmail ? "확인 중..." : "중복 확인"}
+                {isCheckingEmail
+                  ? "확인 중..."
+                  : "중복 확인"}
               </button>
             </div>
 
             {email.length > 0 && !isEmailValid && (
-              <p className="auth-error">올바른 이메일을 입력해주세요.</p>
+              <p className="auth-error">
+                올바른 이메일을 입력해주세요.
+              </p>
             )}
 
             {isEmailAvailable === true && (
-              <p className="auth-success">사용 가능한 이메일입니다.</p>
+              <p className="auth-success">
+                사용 가능한 이메일입니다.
+              </p>
             )}
 
             {isEmailAvailable === false && (
-              <p className="auth-error">이미 사용 중인 이메일입니다.</p>
+              <p className="auth-error">
+                이미 사용 중인 이메일입니다.
+              </p>
             )}
 
             {emailCheckError && (
-              <p className="auth-error">{emailCheckError}</p>
+              <p className="auth-error">
+                {emailCheckError}
+              </p>
             )}
           </div>
 
           <div className="auth-field">
-            <label className="auth-label" htmlFor="signup-nickname">
+            <label
+              className="auth-label"
+              htmlFor="signup-nickname"
+            >
               닉네임
             </label>
 
@@ -199,39 +258,61 @@ export function SignupPage() {
                 type="text"
                 placeholder="2~12자"
                 value={nickname}
-                onChange={(event) => handleNicknameChange(event.target.value)}
+                onChange={(event) =>
+                  handleNicknameChange(event.target.value)
+                }
                 disabled={isSubmitting}
+                required
               />
 
               <button
                 className="auth-check-btn"
                 type="button"
-                onClick={handleCheckNickname}
-                disabled={!isNicknameValid || isCheckingNickname || isSubmitting}
+                onClick={() =>
+                  void handleCheckNickname()
+                }
+                disabled={
+                  !isNicknameValid ||
+                  isCheckingNickname ||
+                  isSubmitting
+                }
               >
-                {isCheckingNickname ? "확인 중..." : "중복 확인"}
+                {isCheckingNickname
+                  ? "확인 중..."
+                  : "중복 확인"}
               </button>
             </div>
 
             {nickname.length > 0 && !isNicknameValid && (
-              <p className="auth-error">닉네임은 2~12자로 입력해주세요.</p>
+              <p className="auth-error">
+                닉네임은 2~12자로 입력해주세요.
+              </p>
             )}
 
             {isNicknameAvailable === true && (
-              <p className="auth-success">사용 가능한 닉네임입니다.</p>
+              <p className="auth-success">
+                사용 가능한 닉네임입니다.
+              </p>
             )}
 
             {isNicknameAvailable === false && (
-              <p className="auth-error">이미 사용 중인 닉네임입니다.</p>
+              <p className="auth-error">
+                이미 사용 중인 닉네임입니다.
+              </p>
             )}
 
             {nicknameCheckError && (
-              <p className="auth-error">{nicknameCheckError}</p>
+              <p className="auth-error">
+                {nicknameCheckError}
+              </p>
             )}
           </div>
 
           <div className="auth-field">
-            <label className="auth-label" htmlFor="signup-password">
+            <label
+              className="auth-label"
+              htmlFor="signup-password"
+            >
               비밀번호
             </label>
 
@@ -242,22 +323,31 @@ export function SignupPage() {
                 type="password"
                 placeholder="8자 이상"
                 value={password}
-                onChange={(event) => setPassword(event.target.value)}
+                onChange={(event) =>
+                  setPassword(event.target.value)
+                }
                 disabled={isSubmitting}
+                required
               />
             </div>
 
             <p className="auth-hint">
-              영문 대·소문자, 숫자, 특수문자를 모두 포함해 8자 이상 입력해 주세요.
+              영문 대·소문자, 숫자, 특수문자를 모두
+              포함해 8자 이상 입력해 주세요.
             </p>
 
             {password.length > 0 && !isPasswordValid && (
-              <p className="auth-error">비밀번호 조건을 확인해주세요.</p>
+              <p className="auth-error">
+                비밀번호 조건을 확인해주세요.
+              </p>
             )}
           </div>
 
           <div className="auth-field">
-            <label className="auth-label" htmlFor="signup-password-confirm">
+            <label
+              className="auth-label"
+              htmlFor="signup-password-confirm"
+            >
               비밀번호 확인
             </label>
 
@@ -268,27 +358,44 @@ export function SignupPage() {
                 type="password"
                 placeholder="다시 입력"
                 value={passwordConfirm}
-                onChange={(event) => setPasswordConfirm(event.target.value)}
+                onChange={(event) =>
+                  setPasswordConfirm(event.target.value)
+                }
                 disabled={isSubmitting}
+                required
               />
             </div>
 
-            {passwordConfirm.length > 0 && !isPasswordConfirmValid && (
-              <p className="auth-error">비밀번호가 일치하지 않습니다.</p>
-            )}
+            {passwordConfirm.length > 0 &&
+              !isPasswordConfirmValid && (
+                <p className="auth-error">
+                  비밀번호가 일치하지 않습니다.
+                </p>
+              )}
           </div>
+
+          {signupMutation.isError && (
+            <p className="auth-error" role="alert">
+              {signupMutation.error.message}
+            </p>
+          )}
 
           <button
             className="auth-submit"
             type="submit"
             disabled={!isFormValid}
           >
-            {isSubmitting ? "가입 중..." : "가입하기"}
+            {isSubmitting
+              ? "가입 중..."
+              : "가입하기"}
           </button>
         </form>
 
         <p className="auth-footer">
-          이미 계정이 있나요? <Link to="/login">로그인</Link>
+          이미 계정이 있나요?{" "}
+          <Link to="/login">
+            로그인
+          </Link>
         </p>
       </div>
     </main>

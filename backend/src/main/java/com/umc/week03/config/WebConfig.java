@@ -15,6 +15,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(authInterceptor)
+                // 인증이 필요한 API만 지정
                 .addPathPatterns(
                         "/members/me",
                         "/ratings",
@@ -24,6 +25,9 @@ public class WebConfig implements WebMvcConfigurer {
                         "/movie-records",
                         "/movie-records/**"
                 );
+
+        // Swagger 경로는 위 목록에 없으므로
+        // 인증 없이 접근 가능
     }
 
     @Override

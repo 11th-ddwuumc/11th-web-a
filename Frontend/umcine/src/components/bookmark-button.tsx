@@ -1,5 +1,7 @@
+"use client";
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { useRouter } from "next/navigation";
 import {
   createFavorite,
   deleteFavorite,
@@ -22,7 +24,7 @@ export function BookmarkButton({
   variant = "label",
   className,
 }: BookmarkButtonProps) {
-  const navigate = useNavigate();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const accessToken = useAuthStore((state) => state.accessToken);
   const favoriteStatusQuery = useQuery({
@@ -51,7 +53,7 @@ export function BookmarkButton({
 
   function handleClick() {
     if (!accessToken) {
-      navigate({ to: "/login" });
+      router.push("/login");
       return;
     }
 

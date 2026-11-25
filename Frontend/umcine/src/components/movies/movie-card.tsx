@@ -1,5 +1,5 @@
 import type { MovieCardItem } from "../../types/movie";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { BookmarkButton } from "../bookmark-button";
 
 interface MovieCardProps {
@@ -11,8 +11,7 @@ export default function MovieCard({ movie }: MovieCardProps) {
     <article className="flex min-w-0 flex-col">
       <div className="relative w-full">
         <Link
-          to="/movies/$movieId"
-          params={{ movieId: String(movie.id) }}
+          href={`/movies/${movie.id}`}
           className="block overflow-hidden rounded-[5px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-action-primary)]"
         >
           <img
@@ -30,8 +29,7 @@ export default function MovieCard({ movie }: MovieCardProps) {
       </div>
 
       <Link
-        to="/movies/$movieId"
-        params={{ movieId: String(movie.id) }}
+        href={`/movies/${movie.id}`}
         className="mt-[9px] break-words text-sm font-extrabold text-[var(--color-text-primary)] no-underline hover:underline"
       >
         {movie.title}

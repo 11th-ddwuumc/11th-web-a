@@ -1,5 +1,7 @@
+"use client";
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import {
   createRating,
@@ -124,7 +126,7 @@ export function MovieRatingPanel({ movieId }: MovieRatingPanelProps) {
   }
 
   if (!accessToken) {
-    return <div className="mt-8 rounded-xl bg-[var(--color-bg-page)] p-5 text-sm text-[var(--color-text-secondary)]">평점을 남기려면 <Link to="/login" className="font-bold text-[var(--color-action-primary)]">로그인</Link>해 주세요.</div>;
+    return <div className="mt-8 rounded-xl bg-[var(--color-bg-page)] p-5 text-sm text-[var(--color-text-secondary)]">평점을 남기려면 <Link href="/login" className="font-bold text-[var(--color-action-primary)]">로그인</Link>해 주세요.</div>;
   }
 
   if (!memberId) {

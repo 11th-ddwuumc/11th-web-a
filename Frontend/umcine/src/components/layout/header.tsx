@@ -1,4 +1,8 @@
-import { Link } from "@tanstack/react-router";
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { cn } from "../../utils/cn";
 import { useQuery } from "@tanstack/react-query";
 import { getMe } from "../../api/members/me";
 import { useAuthStore } from "../../stores/auth-store";
@@ -10,6 +14,8 @@ const activeMenuClass =
   "text-[var(--color-text-primary)] underline";
 
 export function Header() {
+  const pathname = usePathname() ?? "";
+  const isProfile = pathname === "/myPage" || pathname.startsWith("/myPage/");
   const accessToken = useAuthStore((state) => state.accessToken);
   const meQuery = useQuery({
     queryKey: ["members", "me"],
@@ -22,7 +28,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 flex flex-wrap items-center gap-4 border-b border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-4 py-4 sm:flex-nowrap sm:gap-6 sm:px-8 lg:px-20 lg:py-6">
       <Link
-        to="/"
+        href="/"
         aria-label="UMCine 홈"
         className="shrink-0 rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-action-primary)]"
       >
@@ -38,31 +44,23 @@ export function Header() {
         aria-label="주요 메뉴"
       >
         <Link
-          to="/"
-          activeOptions={{ exact: true }}
-          className={menuClass}
-          activeProps={{
-            className: activeMenuClass,
-          }}
+          href="/"
+          className={cn(menuClass, pathname === "/" && activeMenuClass)}
         >
           영화
         </Link>
 
         <Link
-          to="/search"
-          className={menuClass}
-          activeProps={{
-            className: activeMenuClass,
-          }}
+          href="/search"
+          className={cn(menuClass, pathname === "/search" && activeMenuClass)}
         >
           검색
         </Link>
 
         {accessToken ? (
           <Link
-            to="/myPage"
-            className={menuClass}
-            activeProps={{ className: activeMenuClass }}
+            href="/myPage"
+            className={cn(menuClass, isProfile && activeMenuClass)}
           >
             내정보
           </Link>
@@ -73,9 +71,8 @@ export function Header() {
       <div className="ml-auto flex items-center gap-[10px]">
         {!accessToken ? (
           <Link
-            to="/login"
-            className="hidden text-sm font-bold text-[var(--color-text-secondary)] no-underline transition-colors hover:text-[var(--color-text-primary)] md:block"
-            activeProps={{ className: activeMenuClass }}
+            href="/login"
+            className={cn(menuClass, pathname === "/login" && activeMenuClass)}
           >
             로그인
           </Link>
@@ -84,7 +81,7 @@ export function Header() {
         ) : null}
 
         <Link
-          to="/search"
+          href="/search"
           aria-label="검색"
           className="flex h-[42px] w-[42px] items-center justify-center rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] transition-colors hover:bg-[var(--color-bg-page)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-action-primary)]"
         >
@@ -97,7 +94,7 @@ export function Header() {
 
         {accessToken && !meQuery.isLoading ? (
           <Link
-            to="/myPage"
+            href="/myPage"
             className="hidden h-[42px] items-center justify-center rounded-lg bg-[var(--color-action-primary)] px-4 text-sm font-extrabold text-white no-underline transition-colors hover:bg-[var(--color-action-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-action-primary)] sm:flex"
           >
             {meQuery.data?.nickname ?? "내 정보"}

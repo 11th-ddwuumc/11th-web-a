@@ -1,14 +1,14 @@
 import { useMutation } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { useRouter } from "next/navigation";
 import { signUp } from "../api/members/members";
 
 export function useSignupMutation() {
-  const navigate = useNavigate();
+  const router = useRouter();
 
   return useMutation({
     mutationFn: signUp,
     onSuccess: () => {
-      navigate({ to: "/login" });
+      router.push("/login");
     },
   });
 }

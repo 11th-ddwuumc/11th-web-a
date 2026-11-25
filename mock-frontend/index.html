@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>간이 프론트 API 확인</title>
+  </head>
+  <body>
+    <h1>간이 프론트 : API 연동 확인</h1>
+
+    <h2>닉네임 중복 체크</h2>
+    <button onclick="checkNickname()">'수현'으로 중복 체크</button>
+    <p id="nickname-result"></p>
+
+    <h2>이메일 중복 체크</h2>
+    <button onclick="checkEmail()">'noco@umc.com'으로 중복 체크</button>
+    <p id="email-result"></p>
+
+    <h2>회원 평점 조회</h2>
+    <button onclick="getRatings()">1번 회원 평점 조회</button>
+    <p id="ratings-result"></p>
+
+    <script>
+      const API_BASE_URL = "http://localhost:8080";
+
+      async function callApi(path, resultId) {
+        const result = document.getElementById(resultId);
+
+        try {
+          const response = await fetch(`${API_BASE_URL}${path}`);
+          const data = await response.json();
+          result.innerText = JSON.stringify(data);
+        } catch (error) {
+          result.innerText = `FAIL: ${error.message}`;
+        }
+      }
+
+      function checkNickname() {
+        callApi(`/members/nickname/${encodeURIComponent("수현")}`, "nickname-result");
+      }
+
+      function checkEmail() {
+        callApi(`/members/email/${encodeURIComponent("noco@umc.com")}`, "email-result");
+      }
+
+      function getRatings() {
+        callApi("/members/1/ratings", "ratings-result");
+      }
+    </script>
+  </body>
+</html>
